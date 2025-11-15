@@ -149,7 +149,7 @@ int main(void)
 			}
 		}
 		
-		//key=CAN_Receive_Msg(canRXbuf);
+		key=CAN_Receive_Msg(canRXbuf);
 		if(key)//接收到有数据
 		{			
 			OLED_Clear();
