@@ -297,7 +297,7 @@
       <GroupNumber>3</GroupNumber>
       <FileNumber>5</FileNumber>
       <FileType>1</FileType>
-      <tvExp>1</tvExp>
+      <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\SYSTEM\usart\usart.c</PathWithFileName>
@@ -401,11 +401,35 @@
       <GroupNumber>4</GroupNumber>
       <FileNumber>13</FileNumber>
       <FileType>1</FileType>
-      <tvExp>1</tvExp>
+      <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\HARDWARE\CAN\can.c</PathWithFileName>
       <FilenameWithoutPath>can.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>4</GroupNumber>
+      <FileNumber>14</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>1</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\HARDWARE\AS5600\AS5600.c</PathWithFileName>
+      <FilenameWithoutPath>AS5600.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>4</GroupNumber>
+      <FileNumber>15</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>1</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\HARDWARE\AS5600\myiic.c</PathWithFileName>
+      <FilenameWithoutPath>myiic.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
