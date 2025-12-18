@@ -51,7 +51,7 @@ void TIM2_IRQHandler(void)
     // 检查更新中断
     if(TIM2->SR & 0X0001)
     {
-        TIM2->SR &= ~(1<<0); // 【建议】进中断先清标志位，防止重入风险
+        TIM2->SR &= ~(1<<0); //进中断先清标志位，防止重入风险
 
         oled_tick++;
         // LED1 闪烁测试
@@ -77,6 +77,7 @@ void TIM2_IRQHandler(void)
         // 1. 读取 AS5600 并处理位置
         // ============================================================
         curr_raw = AS5600_GetRawAngle();
+        Global_AS5600_Raw = curr_raw;
         //curr_raw = Global_AS5600_Raw;
         
         // 【注意】如果Error一直是正数且增大，请解开下面这行的注释，注释掉上面那行
@@ -174,7 +175,7 @@ void TIM2_IRQHandler(void)
         StepMotor_SetSpeed(final_speed);
         
     }
-    CAN_Send_Feedback(Target_Speed_Hz,Real_Output_Hz);
+    CAN_Send_Feedback(Global_AS5600_Raw,Global_AS5600_Raw);
 }
 //**** Timer2 IRQHandler **********************************  	 
 //===============================
@@ -185,7 +186,7 @@ void TIM3_IRQHandler(void)
 	if(TIM3->SR&0X0001)//溢出中断
 	{
         TIM3->SR&=~(1<<0);//清除中断标志位 	
-	    Global_AS5600_Raw = AS5600_GetRawAngle();
+
 	}
 	    
 }

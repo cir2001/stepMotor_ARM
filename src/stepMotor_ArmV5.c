@@ -83,9 +83,20 @@
 //设置FLASH 保存地址(必须为偶数，且其值要大于本代码所占用FLASH的大小+0X08000000)
 #define FLASH_SAVE_ADDR  0X08010000 
 #define BufferSize 16
-// ===================================================================
-//  全局变量
-// ===================================================================
+//----------------------------------------------------
+// 自定义函数声明 
+//-----------------------------------------------------
+
+//----------------------------------------------------
+// 外部变量声明 
+//-----------------------------------------------------
+u16 FlashRead[32];
+extern u8 USART2_RX_BUF[128];     	//接收缓冲,最大128个字节.
+extern u8 USART2_TX_BUF[128];     	//发送缓冲,最大128个字节.
+extern u8  USART1_RX_BUF[128];     	//接收缓冲,最大128个字节.
+extern u8  USART1_TX_BUF[128];     	//发送缓冲,最大128个字节.
+extern u8 TxD1pt,TxD2pt,TxD1Num,TxD2Num;
+
 // 闭环控制相关
 extern int64_t Theory_Pos_Scaled; // 理论位置 (放大版)
 extern int64_t Actual_Pos_Scaled; // 实际位置 (放大版)
@@ -96,22 +107,6 @@ extern u16 Last_AS5600_Raw;           // 上次编码器读数
 extern int32_t Target_Speed_Hz;   // 用户设定的目标速度
 extern int32_t Real_Output_Hz;   // 实际发给电机的速度 (包含补偿)
 
-// 调试/显示相关
-volatile float Display_RPM = 0.0f;
-volatile float Display_Angle = 0.0f;
-
-volatile int32_t User_Cmd_Speed = 0;   // 串口发来的最终目标
-//----- 自定义函数 -----------------
-
-
-//---------------------
-u16 FlashRead[32];
-extern u8 USART2_RX_BUF[128];     	//接收缓冲,最大128个字节.
-extern u8 USART2_TX_BUF[128];     	//发送缓冲,最大128个字节.
-extern u8  USART1_RX_BUF[128];     	//接收缓冲,最大128个字节.
-extern u8  USART1_TX_BUF[128];     	//发送缓冲,最大128个字节.
-extern u8 TxD1pt,TxD2pt,TxD1Num,TxD2Num;
-
 extern u8 EXIT0_flag;
 extern u8 key_press;
 
@@ -121,7 +116,10 @@ extern u8 u8Uart2_flag;
 
 extern u16 CAN_RX_ID;
 extern int recv_uart2_val;
-//=====================================================
+extern u16 Global_AS5600_Raw;
+//----------------------------------------------------
+// 变量声明 
+//-----------------------------------------------------
 short Gyro[3],Acc[3];
 
 u16 res,u8Led0_Counter;
@@ -135,6 +133,8 @@ u8 u8can,u8can1,u8can2;
 unsigned char h2c_id[3],h2c[8][2];
 
 u32 oled_tick;
+// 调试/显示相关
+volatile int32_t User_Cmd_Speed = 0;   // 串口发来的最终目标
 //==========================================================
 int main(void)
 {
@@ -149,6 +149,13 @@ int main(void)
 	delay_ms(10);
 	OLED_Init();
 	delay_ms(10);
+
+    CAN_Mode_Init();				//CAN初始化,波特率500Kbps    
+	delay_ms(10);
+
+    StepMotor_Init();				//步进电机初始化
+	delay_ms(10);
+    AS5600_Init();                 //AS5600初始化
 	
 	uart_init2(36,115200);	 		//串口2初始化为57600 APB1/2预分频（与上位机通讯）
 	delay_ms(10);
@@ -156,18 +163,7 @@ int main(void)
 	//Timer2_Init(999,71);				//定时器2初始化 1ms
 	Timer2_Init(4999,71);				//定时器2初始化 5ms
 	delay_ms(10);
-
-    //Timer3_Init(1999,71);				//定时器2初始化 2ms 读取AS5600数据
-	delay_ms(10);
-
-	StepMotor_Init();				//步进电机初始化
-	delay_ms(10);
 	
-	CAN_Mode_Init();				//CAN初始化,波特率500Kbps    
-	delay_ms(10);
-	
-	JTAG_Set(SWD_ENABLE);	 		//设置成SWD调试模式，关闭JTAG模式
-	delay_ms(10);
 //******** 变量初始化 **********//
 	u8Led0_Counter = 0;
 	key_press = 0;
@@ -175,14 +171,10 @@ int main(void)
 	// OLED 静态显示 (画表格、写固定的字)
     // 这些字只写一次，循环里不要重复刷，提高效率
     OLED_Clear();
-    /*OLED_ShowString(0, 0,  "MODE: Velocity");
-    OLED_ShowString(0, 24, "RPM :");
-    OLED_ShowString(0, 48, "Ang :");*/
-
-	OLED_ShowString_Data(0, 0,  "CAN_ID : ",CAN_ID_FILTER_START);
-	OLED_ShowString_Data(0, 16, "ID_FB  : ",CAN_ID_MOTOR_FB);
-    OLED_ShowString(0, 32, "Tar_FB :");
-    OLED_ShowString(0, 48, "Spd :");
+	OLED_ShowString_Data(0, 0,  "CAN_ID:  ",CAN_ID_FILTER_START);
+	OLED_ShowString_Data(0, 16, "ID_FB :  ",CAN_ID_MOTOR_FB);
+    OLED_ShowString(0, 32, "Tar_Re:");
+    OLED_ShowString(0, 48, "AS56 :");
 
     OLED_Refresh_Gram(); // 第一次刷显存
 	// 简单的加速启动示例 
@@ -224,69 +216,18 @@ int main(void)
             oled_tick = 0; // 清零计时器
             LMain = !LMain;
 
-            OLED_ShowString(48, 32, "      "); // 清除旧数字
-            if(Target_Speed_Hz < 0) {
-                OLED_ShowString(48, 32, "-");
-                OLED_ShowNum(56, 32, -Target_Speed_Hz, 6, 16);
-            } else {
-                OLED_ShowNum(48, 32, Target_Speed_Hz, 7, 16);
-            }
-            // 显示实际输出频率 (Real Output Hz)
-            OLED_ShowString(48, 48, "      ");
-            if(Real_Output_Hz < 0) {
-                 OLED_ShowString(48, 48, "-");
-                 OLED_ShowNum(56, 48, -Real_Output_Hz, 6, 16);
-            } else {
-                 OLED_ShowNum(48, 48, Real_Output_Hz, 7, 16);
-            }
+           char buf[8]; // 缓冲区
+
+            // 处理 Target_Speed
+            sprintf(buf, "%7d", Target_Speed_Hz); // "%-7d" 左对齐，占7位
+            OLED_ShowString(56, 32, buf);
+
+            // 处理 Real_Output
+            sprintf(buf, "%5d", Global_AS5600_Raw);
+            OLED_ShowString(72, 48, buf);
 
             OLED_Refresh_Gram(); // 刷新显存
-            // --- A. 准备数据 ---
-            // 为了显示稳定，可以把浮点数转成整数，或者保留1位小数
-          	/*show_rpm = (int)Target_Speed_Hz;
-            show_ang = (int)Last_AS5600_Raw;
-
-			//show_rpm = (int)1500;
-            //show_ang = (int)355;
-
-            // --- B. 写入显存 (只更新变化的数字) ---
-            // 显示转速 (在 x=48, y=24 的位置)
-            // 这里的 " " 是为了覆盖掉上一帧可能残留的多余位数
-            // 比如 1000 变 9，不清除就会变成 9000
-            OLED_ShowString(48, 24, "      "); // 先清除数字区域
-            if(show_rpm < 0) {
-                 OLED_ShowString(48, 24, "-");
-                 OLED_ShowNum(56, 24, -show_rpm, 6, 16);
-            } else {
-					OLED_ShowString(48, 24, "+");
-                 OLED_ShowNum(56, 24, show_rpm, 6, 16);
-            }
-
-            // 显示角度 (在 x=48, y=48 的位置)
-            OLED_ShowString(48, 48, "      "); // 先清除
-            OLED_ShowNum(48, 48, show_ang, 5, 16);
-
-            // --- C. 发送至屏幕 (最耗时的一步) ---
-            OLED_Refresh_Gram(); */
-            
-			// 显示误差 (Position Error)
-			/*OLED_ShowString(48, 16, "      "); // 清除旧数字
-            if(Target_Speed_Hz < 0) {
-                OLED_ShowString(48, 16, "-");
-                OLED_ShowNum(56, 16, -Target_Speed_Hz, 6, 16);
-            } else {
-                OLED_ShowNum(48, 16, Target_Speed_Hz, 7, 16);
-            }
-
-           OLED_ShowString(48, 32, "      "); // 清除旧数字
-            if(Position_Error < 0) {
-                OLED_ShowString(48, 32, "-");
-                OLED_ShowNum(56, 32, -Position_Error, 6, 16);
-            } else {
-                OLED_ShowNum(48, 32, Position_Error, 7, 16);
-            }*/
         }
-		
 	}   // while(1) end
 }		// int main(void) end
 

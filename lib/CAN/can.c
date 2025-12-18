@@ -33,19 +33,19 @@ u8 CAN_Mode_Init(void)
 {
 	u16 i=0;
 	u8 brp;
-	/* 1. 使能 CAN1 和 GPIOA 时钟 */
+	/* 使能 CAN1 和 GPIOA 时钟 */
 	RCC->APB1ENR |= (1 << 25);    	//使能 CAN1 时钟  CAN使用的是APB1的时钟(max:36M)
 	RCC->APB2ENR |= (1 << 2);     	//使能PORTA时钟	 	 
 	
-	/* 2. 配置 PA11 (CAN_RX)为上拉输入、PA12(CAN_TX)为复用推挽输出 */
+	/* 配置 PA11 (CAN_RX)为上拉输入、PA12(CAN_TX)为复用推挽输出 */
 	GPIOA->CRH &= 0XFFF00FFF; 
 	GPIOA->CRH |= 0X000B8000;		//PA11 RX,PA12 TX推挽输出   	 
   	GPIOA->ODR |= 3<<11;			//PA 上拉
 					    
-	/* 3. 退出 SLEEP 模式 (若处于睡眠状态) */
+	/* 退出 SLEEP 模式 (若处于睡眠状态) */
 	CAN1->MCR = 0x00000;			//退出睡眠模式(同时设置所有位为0)
 	
-	/* 4. 进入初始化模式 */
+	/* 进入初始化模式 */
 	CAN1->MCR |= 1<<0;				//请求CAN进入初始化模式
 	while((CAN1->MSR & (1<<0)) == 0)
 	{
@@ -53,17 +53,11 @@ u8 CAN_Mode_Init(void)
 		if(i > 100) return 2;		//进入初始化模式失败
 	}
 	
-	/* 5. 关闭 TTCM/ABOM/AWUM/RFLM/TXFP (均为disable) */
-	CAN1->MCR |= 0<<7;		//关闭非时间触发通信模式
-	CAN1->MCR |= 0<<6;		//关闭软件自动离线管理
-	CAN1->MCR |= 0<<5;		//关闭睡眠模式通过软件唤醒(清除CAN1->MCR的SLEEP位)	
-	CAN1->MCR |= 0<<3;		//关闭报文不锁定,新的覆盖旧的
-	CAN1->MCR |= 0<<2;		//关闭优先级由报文标识符决定
-	
-	/* 6. 关闭自动重传 (NART=1)  */
-	CAN1->MCR |= 1<<4;		//关闭禁止报文自动传送
-	
-	/* 7. 设置波特率  */
+	CAN1->MCR &= ~(1 << 4);     // NART=0: 允许自动重传
+    CAN1->MCR |= (1 << 6);      // ABOM=1: 自动离线管理
+    CAN1->MCR |= (1 << 5);      // AWUM=1: 自动唤醒
+
+	/*  设置波特率  */
 	/* Note: this calculations fit for PCLK1 = 36MHz */
   	brp  = (36000000 / 18) / 500000;                     // baudrate is set to 500k bit/s
 	/* set BTR register so that sample point is at about 72% bit time from bit start */
@@ -72,10 +66,7 @@ u8 CAN_Mode_Init(void)
 	//--- 波特率:Fpclk1/((Tbs1+Tbs2+1)*Fdiv) ---//
 	CAN1->BTR |=  ((((2-1) & 0x03) << 24) | (((4-1) & 0x07) << 20) | (((13-1) & 0x0F) << 16) | ((brp-1) & 0x1FF)); 
 	
-	// 【修改】强制开启回环模式 (LBKM = Bit 30)
-	//CAN1->BTR |= (1 << 30); //测试MCU内部回环测试
-	
-	/* 8. 退出初始化模式 */
+	/* 退出初始化模式 */
 	CAN1->MCR &= ~(1<<0);		//请求CAN退出初始化模式
 	while((CAN1->MSR & (1<<0)) == 1)
 	{
@@ -83,7 +74,7 @@ u8 CAN_Mode_Init(void)
 		if(i > 0XFFF0) return 3;//退出初始化模式失败
 	}
 	
-	/* 9. 配置过滤器0 (可配置的过滤器0-13) */
+	/*  配置过滤器0 (可配置的过滤器0-13) */
 	CAN1->FMR |= 1<<0;			//过滤器组工作在初始化模式
 	CAN1->FA1R &= ~(1<<0);		//过滤器0不激活
 
