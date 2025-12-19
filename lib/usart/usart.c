@@ -17,9 +17,9 @@ u8  u8ErrCode;
 
 u8  u8test1,u8test2,u8test3,u8test4,u8test5,u8test6,u8test7,u8test8;
 u8  rData1Temp,rData2Temp;
-u8 	key_press;
+
 u8 	u8Uart2_flag;
-u8 u8Uart2_flag_test;
+u8  u8Uart2_flag_test;
 
 int recv_uart2_val,temp_val;;
 //=========================================================

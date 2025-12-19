@@ -5,11 +5,9 @@
 #include "oled.h"
 #include "port.h"
 //////////////////////////////////////////////////////////////////////////////////	 
-u8 CAN_RX_Flag;
-u8 CAN_RX_BUF[8];
-
-u16 CAN_RX_ID;
 extern int32_t Target_Speed_Hz;
+extern uint32_t CAN_Timeout_Counter;
+
 //////////////////////////////////////////////////////////////////////////////////
 //CAN初始化
 //位时间设置：
@@ -87,138 +85,19 @@ u8 CAN_Mode_Init(void)
 #endif
 	return 0;
 }   
-//id:标准ID(11位)/扩展ID(11位+18位)	    
-//ide:0,标准帧;1,扩展帧
-//rtr:0,数据帧;1,远程帧
-//len:要发送的数据长度(固定为8个字节,在时间触发模式下,有效数据为6个字节)
-//*dat:数据指针.
-//返回值:0~3,邮箱编号.0XFF,无有效邮箱.
-u8 CAN_Tx_Msg(u32 id,u8 ide,u8 rtr,u8 len,u8 *dat)
-{	   
-	u8 mbox;	  
-	if(CAN1 -> TSR & (1 << 26)) mbox=0;			//邮箱0为空
-	else if(CAN1 -> TSR & (1 << 27)) mbox=1;	//邮箱1为空
-	else if(CAN1 -> TSR & (1 << 28)) mbox=2;	//邮箱2为空
-	else return 0XFF;							//无空邮箱,无法发送 
-	CAN1 -> sTxMailBox[mbox].TIR = 0;			//清除之前的设置
-	if(ide == 0)	//标准帧
-	{
-		id &= 0x7ff;		//取低11位stdid
-		id <<= 21;		  
-	}else			//扩展帧
-	{
-		id &= 0X1FFFFFFF;	//取低32位extid
-		id <<= 3;									   
-	}
-	CAN1 -> sTxMailBox[mbox].TIR |= id;		 
-	CAN1 -> sTxMailBox[mbox].TIR |= ide << 2;	  
-	CAN1 -> sTxMailBox[mbox].TIR |= rtr << 1;
-	len &= 0X0F;//得到低四位
-	CAN1 -> sTxMailBox[mbox].TDTR &= ~(0X0000000F);
-	CAN1 -> sTxMailBox[mbox].TDTR |= len;	//设置DLC.
-	//待发送数据存入邮箱.
-	CAN1 -> sTxMailBox[mbox].TDHR = (((u32)dat[7] << 24) |
-									((u32)dat[6] << 16) |
- 									((u32)dat[5] << 8) |
-									((u32)dat[4]));
-	CAN1 -> sTxMailBox[mbox].TDLR=(((u32)dat[3] << 24) |
-									((u32)dat[2] << 16) |
- 									((u32)dat[1] << 8) |
-									((u32)dat[0]));
-	CAN1 -> sTxMailBox[mbox].TIR |= 1 << 0; 	//请求发送邮箱数据
-	return mbox;
-}
-//获得发送状态.
-//mbox:邮箱编号;
-//返回值:发送状态. 0,挂起;0X05,发送失败;0X07,发送成功.
-u8 CAN_Tx_Staus(u8 mbox)
-{	
-	u8 sta=0;					    
-	switch (mbox)
-	{
-		case 0: 
-			sta |= CAN1 -> TSR & (1 << 0);				//RQCP0
-			sta |= CAN1 -> TSR & (1 << 1);				//TXOK0
-			sta |= ((CAN1 -> TSR & (1 << 26)) >> 24);	//TME0
-			break;
-		case 1: 
-			sta |= CAN1 -> TSR & (1 << 8) >> 8;			//RQCP1
-			sta |= CAN1 -> TSR & (1 << 9) >> 8;			//TXOK1
-			sta |= ((CAN1 -> TSR & (1 << 27)) >> 25);	//TME1	   
-			break;
-		case 2: 
-			sta |= CAN1 -> TSR & (1 << 16) >>16;		//RQCP2
-			sta |= CAN1 -> TSR & (1 << 17) >>16;		//TXOK2
-			sta |= ((CAN1 -> TSR & (1 << 28)) >>26);	//TME2
-			break;
-		default:
-			sta = 0X05;//邮箱号不对,肯定失败.
-		break;
-	}
-	return sta;
-} 
-//得到在FIFO0/FIFO1中接收到的报文个数.
-//fifox:0/1.FIFO编号;
-//返回值:FIFO0/FIFO1中的报文个数.
-u8 CAN_Msg_Pend(u8 fifox)
-{
-	if(fifox == 0) return CAN1 -> RF0R&0x03; 
-	else if(fifox == 1) return CAN1 -> RF1R&0x03; 
-	else return 0;
-}
-//接收数据
-//fifox:邮箱号
-//id:标准ID(11位)/扩展ID(11位+18位)	    
-//ide:0,标准帧;1,扩展帧
-//rtr:0,数据帧;1,远程帧
-//len:接收到的数据长度(固定为8个字节,在时间触发模式下,有效数据为6个字节)
-//dat:数据缓存区
-void CAN_Rx_Msg(u8 fifox,u32 *id,u8 *ide,u8 *rtr,u8 *len,u8 *dat)
-{	   
-	*ide = CAN1 -> sFIFOMailBox[fifox].RIR&0x04;	//得到标识符选择位的值  
- 	if(*ide == 0)//标准标识符
-	{
-		*id = CAN1 -> sFIFOMailBox[fifox].RIR>>21;
-	}else	   //扩展标识符
-	{
-		*id = CAN1 -> sFIFOMailBox[fifox].RIR>>3;
-	}
-	*rtr = CAN1 -> sFIFOMailBox[fifox].RIR & 0x02;	//得到远程发送请求值.
-	*len = CAN1 -> sFIFOMailBox[fifox].RDTR & 0x0F;	//得到DLC
- 	//*fmi=(CAN1->sFIFOMailBox[FIFONumber].RDTR>>8)&0xFF;//得到FMI
-	//接收数据
-	dat[0] = (CAN1 -> sFIFOMailBox[fifox].RDLR) & 0XFF;
-	dat[1] = (CAN1 -> sFIFOMailBox[fifox].RDLR>>8) & 0XFF;
-	dat[2] = (CAN1 -> sFIFOMailBox[fifox].RDLR>>16) & 0XFF;
-	dat[3] = (CAN1 -> sFIFOMailBox[fifox].RDLR>>24) & 0XFF;    
-	dat[4] = (CAN1 -> sFIFOMailBox[fifox].RDHR) & 0XFF;
-	dat[5] = (CAN1 -> sFIFOMailBox[fifox].RDHR>>8) & 0XFF;
-	dat[6] = (CAN1 -> sFIFOMailBox[fifox].RDHR>>16) & 0XFF;
-	dat[7] = (CAN1 -> sFIFOMailBox[fifox].RDHR>>24) & 0XFF;    
-  	if(fifox == 0) CAN1->RF0R |= 0X20;//释放FIFO0邮箱
-	else if(fifox == 1) CAN1->RF1R |= 0X20;//释放FIFO1邮箱	 
-}
 
-#if CAN_RX0_INT_ENABLE	//使能RX0中断
 //中断服务函数			    
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
-	/*u32 id;
-	u8 ide,rtr,len;     
- 	CAN_Rx_Msg(0,&id,&ide,&rtr,&len,CAN_RX_BUF);
-	CAN_RX_ID = id & 0xFFFF;
-	CAN_RX_Flag = 1;*/
 	if(CAN1->RF0R & CAN_RF0R_FMP0) // FIFO0 有数据
     {
-		u32 id;
-		u8 len;
 		int32_t recv_val;
 		LED0 = !LED0;
 		// 1. 读取 ID (标准帧 ID 在 RIR 寄存器高 11 位)
-        id = (CAN1->sFIFOMailBox[0].RIR >> 21) & 0x7FF;; // 读取标准 ID
+        uint32_t id = (CAN1->sFIFOMailBox[0].RIR >> 21) & 0x7FF;; // 读取标准 ID
         
 		// 2. 读取数据长度 DLC
-        len = CAN1->sFIFOMailBox[0].RDTR & 0x0F;
+        u8 len = CAN1->sFIFOMailBox[0].RDTR & 0x0F;
 
         // 3. 读取数据 (RDLR 低4字节, RDHR 高4字节)
         // 假设前 4 字节是 int32 速度
@@ -235,40 +114,14 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
         if(recv_val < -25000) recv_val = -25000;
         
         Target_Speed_Hz = recv_val;
+		
+		CAN_Timeout_Counter = 0; // 重置超时计数器 timer2
 
         // 释放邮箱
         CAN1->RF0R |= CAN_RF0R_RFOM0;
     }
 }
-#endif
 
-//can发送一组数据(固定格式:ID为0X12,标准帧,数据帧)	
-//len:数据长度(最大为8)				     
-//msg:数据指针,最大为8个字节.
-//返回值:0,成功;
-//		其他,失败;
-u8 CAN_Send_Msg(u8* msg,u8 len)
-{	
-	u8 mbox;
-	u16 i=0;	  	 						       
-    mbox=CAN_Tx_Msg(0X12,0,0,len,msg);
-	while((CAN_Tx_Staus(mbox) != 0X07) && (i<0XFFF)) i++;//等待发送结束
-	if(i >= 0XFFF) return 1;							//发送失败?
-	return 0;										//发送成功;
-}
-//can口接收数据查询
-//buf:数据缓存区;	 
-//返回值:0,无数据被收到;
-//		 其他,接收的数据长度;
-u8 CAN_Receive_Msg(u8 *buf)
-{		   		   
-	u32 id;
-	u8 ide,rtr,len; 
-	if(CAN_Msg_Pend(0)==0)return 0;			//没有接收到数据,直接退出 	 
-  	CAN_Rx_Msg(0,&id,&ide,&rtr,&len,buf); 	//读取数据
-    if(id!=0x12||ide!=0||rtr!=0)len=0;		//接收错误	   
-	return len;	
-}
 //--------------------------------------------------------------------------
 //can口发送一组数据至上位机F407(固定格式:CAN_ID_MOTOR_FB,标准帧,数据帧)
 //real_speed:当前实际的速度

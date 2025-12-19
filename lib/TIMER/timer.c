@@ -7,11 +7,16 @@
 #include <stdlib.h>
 #include "can.h"
 //==========================================
-
-
+#define MAX_CAN_TIMEOUT_TICKS  20          // 5ms * 20 = 100ms 未收到指令则保护
 //*******************************************
 extern u8 USART1_TX_BUF[128],USART2_TX_BUF[128];
 extern u8 TxD1pt,TxD2pt,TxD1Num,TxD2Num;
+
+extern u8 u8Uart2_flag_test;
+extern u32 oled_tick;
+//--------------------------------------------
+//变量声明
+//--------------------------------------------
 // 闭环控制相关
 volatile int64_t Theory_Pos_Scaled = 0; // 理论位置 (放大版)
 volatile int64_t Actual_Pos_Scaled = 0; // 实际位置 (放大版)
@@ -22,8 +27,8 @@ u16 Last_AS5600_Raw = 0;           // 上次编码器读数
 volatile int32_t Target_Speed_Hz = 0;   // 用户设定的目标速度
 volatile int32_t Real_Output_Hz = 0;   // 实际发给电机的速度 (包含补偿)
 
-extern u8 u8Uart2_flag_test;
-extern u32 oled_tick;
+volatile uint32_t CAN_Timeout_Counter = 0; // 通信超时计数器
+uint8_t System_Status = 0x01;              // 系统状态位，初始设为 0x01 (Ready)
 
 u16 Global_AS5600_Raw = 0;
 u16 t1,t2;
@@ -72,7 +77,21 @@ void TIM2_IRQHandler(void)
                 //Target_Speed_Hz = 0; // 建议直接改目标速度，而不是直接操作电机
             }
         }
-
+        // ============================================================
+        // 通信保护程序 (Watchdog)
+        // ============================================================
+        CAN_Timeout_Counter++; 
+        if(CAN_Timeout_Counter > MAX_CAN_TIMEOUT_TICKS) 
+        {
+            // 如果超过 100ms 没收到 F407 指令
+            Target_Speed_Hz = 0;             // 强制目标速度归零
+            System_Status |= (1 << 7);       // 标记状态位 Bit7 为通信丢失
+            // StepMotor_Disable();          // 可选：如果是强制保护，可以直接失能电机
+        }
+        else
+        {
+            System_Status &= ~(1 << 7);      // 通信正常，清除 Bit7
+        }
         // ============================================================
         // 1. 读取 AS5600 并处理位置
         // ============================================================
@@ -132,8 +151,6 @@ void TIM2_IRQHandler(void)
             Theory_Pos_Scaled -= (Position_Error + 2000) * SCALING_FACTOR;
             Position_Error = -2000;
         }
-
-
         // ============================================================
         // 4. 计算补偿 (P控制)
         // ============================================================
@@ -175,7 +192,7 @@ void TIM2_IRQHandler(void)
         StepMotor_SetSpeed(final_speed);
         
     }
-    CAN_Send_Feedback(Global_AS5600_Raw,Global_AS5600_Raw);
+    CAN_Send_Feedback(Global_AS5600_Raw,System_Status);
 }
 //**** Timer2 IRQHandler **********************************  	 
 //===============================

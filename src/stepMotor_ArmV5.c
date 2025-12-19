@@ -19,7 +19,7 @@
 //	2025-11-20	添加CAN收发功能
 //	2025-12-05	添加AS5600读角度功能
 //	2025-12-10	添加oled显示功能
-//	2025-12-14	添加步进电机控制功能 串口2发送转速指令
+//	2025-12-14	添加步进电机控制功能 串口2发送转速指令 指令格式：#S-10000 or #S-10000.
 //	2025-12-15	更改can收发函数
 //  2025-12-16  PlatformIO开发
 //  2025-12-17  F407 F103 can联机测试
@@ -107,31 +107,13 @@ extern u16 Last_AS5600_Raw;           // 上次编码器读数
 extern int32_t Target_Speed_Hz;   // 用户设定的目标速度
 extern int32_t Real_Output_Hz;   // 实际发给电机的速度 (包含补偿)
 
-extern u8 EXIT0_flag;
-extern u8 key_press;
-
-extern u8 CAN_RX_Flag;
-extern u8 CAN_RX_BUF[8];
 extern u8 u8Uart2_flag;
-
-extern u16 CAN_RX_ID;
 extern int recv_uart2_val;
 extern u16 Global_AS5600_Raw;
 //----------------------------------------------------
 // 变量声明 
 //-----------------------------------------------------
-short Gyro[3],Acc[3];
-
-u16 res,u8Led0_Counter;
-
-u8 temp_1,temp_2,temp_3;
 u8 i;
-u8 canbuf[8]={0x05,0x01,0x05,0x01,0x05,0x05,0x06,0x07};
-u8 key;
-u8 canRXbuf[8];
-u8 u8can,u8can1,u8can2;
-unsigned char h2c_id[3],h2c[8][2];
-
 u32 oled_tick;
 // 调试/显示相关
 volatile int32_t User_Cmd_Speed = 0;   // 串口发来的最终目标
@@ -165,9 +147,6 @@ int main(void)
 	delay_ms(10);
 	
 //******** 变量初始化 **********//
-	u8Led0_Counter = 0;
-	key_press = 0;
-
 	// OLED 静态显示 (画表格、写固定的字)
     // 这些字只写一次，循环里不要重复刷，提高效率
     OLED_Clear();
