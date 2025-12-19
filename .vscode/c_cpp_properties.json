@@ -1,82 +1,62 @@
-//
-// !!! WARNING !!! AUTO-GENERATED FILE!
-// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
-// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
-//
 {
-    "configurations": [
-        {
-            "name": "PlatformIO",
-            "includePath": [
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/include",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/src",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/SYSTICK",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/EXTI",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/TIMER",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/CAN",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/STEPMOTOR",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/STMFLASH",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/usart",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/OLED",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/SPI",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/PORT",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/LED",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/AS5600",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/delay",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/sys",
-                "C:/Users/Administrator/.platformio/packages/framework-cmsis/CMSIS/Include",
-                "C:/Users/Administrator/.platformio/packages/framework-cmsis-stm32f1/Include",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/BEEP",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/KEY",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/LCD",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/WDG",
-                "c:/Users/Administrator/Desktop/stepMotor_ARM/.pio/libdeps/genericSTM32F103C6/Unity/src",
-                ""
-            ],
-            "browse": {
-                "limitSymbolsToIncludedHeaders": true,
-                "path": [
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/include",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/src",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/SYSTICK",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/EXTI",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/TIMER",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/CAN",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/STEPMOTOR",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/STMFLASH",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/usart",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/OLED",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/SPI",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/PORT",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/LED",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/AS5600",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/delay",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/sys",
-                    "C:/Users/Administrator/.platformio/packages/framework-cmsis/CMSIS/Include",
-                    "C:/Users/Administrator/.platformio/packages/framework-cmsis-stm32f1/Include",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/BEEP",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/KEY",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/LCD",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/WDG",
-                    "c:/Users/Administrator/Desktop/stepMotor_ARM/.pio/libdeps/genericSTM32F103C6/Unity/src",
-                    ""
-                ]
-            },
-            "defines": [
-                "PLATFORMIO=60118",
-                "STM32F103x6",
-                "STM32F1",
-                "STM32F10X_LD",
-                "F_CPU=72000000L",
-                ""
-            ],
-            "compilerPath": "C:/Users/Administrator/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-gcc.exe",
-            "compilerArgs": [
-                "-mthumb",
-                "-mcpu=cortex-m3",
-                ""
-            ]
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "windows-gcc-arm64",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "C:/Users/Administrator/Documents/PlatformIO/Projects/StepMotor/include",
+        "C:/Users/Administrator/Documents/PlatformIO/Projects/StepMotor/src",
+        "C:/Users/Administrator/.platformio/packages/framework-cmsis/CMSIS/Include",
+        "C:/Users/Administrator/.platformio/packages/framework-cmsis-stm32f1/Include",
+        ""
+      ],
+      "browse": {
+        "limitSymbolsToIncludedHeaders": true,
+        "path": [
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/include",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/src",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/SYSTICK",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/EXTI",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/TIMER",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/CAN",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/STEPMOTOR",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/STMFLASH",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/usart",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/OLED",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/SPI",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/PORT",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/LED",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/AS5600",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/delay",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/sys",
+          "C:/Users/Administrator/.platformio/packages/framework-cmsis/CMSIS/Include",
+          "C:/Users/Administrator/.platformio/packages/framework-cmsis-stm32f1/Include",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/BEEP",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/KEY",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/LCD",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/lib/WDG",
+          "c:/Users/Administrator/Desktop/stepMotor_ARM/.pio/libdeps/genericSTM32F103C6/Unity/src",
+          ""
+        ]
+      },
+      "defines": [
+        "PLATFORMIO=60118",
+        "STM32F103x6",
+        "STM32F1",
+        "STM32F10X_LD",
+        "F_CPU=72000000L",
+        ""
+      ],
+      "compilerPath": "C:/Users/Administrator/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-gcc.exe",
+      "compilerArgs": [
+        "-mthumb",
+        "-mcpu=cortex-m3",
+        ""
+      ],
+      "cStandard": "${default}",
+      "cppStandard": "${default}",
+      "intelliSenseMode": "windows-gcc-arm64"
+    }
+  ],
+  "version": 4
 }

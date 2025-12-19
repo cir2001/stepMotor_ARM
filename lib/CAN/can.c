@@ -78,11 +78,9 @@ u8 CAN_Mode_Init(void)
 
 	CAN_Filter_MODE_32BIT_MASK();
 
-#if CAN_RX0_INT_ENABLE
  	//使用中断接收
 	CAN1->IER|=1<<1;		//FIFO0消息挂号中断允许.	    
 	MY_NVIC_Init(2,0,USB_LP_CAN1_RX0_IRQn,2);//组2
-#endif
 	return 0;
 }   
 
