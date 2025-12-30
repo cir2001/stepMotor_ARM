@@ -3,39 +3,29 @@
 
 #include "sys.h"
 //==============================================
-void Timer1_Init(u16 arr,u16 psc);
 void Timer2_Init(u16 arr,u16 psc);
 void Timer3_Init(u16 arr,u16 psc);
-void Timer4_Init(u16 arr,u16 psc);
-void Timer5_Init(u16 arr,u16 psc);
 
-void PWM_Init_Timer1(u16 arr,u16 psc);
-void PWM_Init_Timer3(u16 arr,u16 psc);
-void PWM_Init_Timer4(u16 arr,u16 psc);
+// 机械参数
+#define MICRO_STEP        16    // 细分
+#define STEPPER_FULL_STEP 200   // 电机物理步数
+// 一圈需要的脉冲数 = 200 * 16 = 3200
+#define PULSES_PER_REV    (STEPPER_FULL_STEP * MICRO_STEP) 
+// 编码器一圈数值
+#define ENCODER_RES       4096 
 
-void Encoder_Init_Timer2(void);
-void Encoder_Init_Timer3(void);
-void Encoder_Init_Timer4(void);
+// 定点数运算参数 (使用 int64_t 避免 double 性能问题)
+#define SCALING_FACTOR    1000  // 放大1000倍
+// 比例系数: 1个脉冲 = 多少个编码器单位 (放大后)
+// (4096 / 3200) * 1000 = 1280
+#define RATIO_SCALED      ((ENCODER_RES * SCALING_FACTOR) / PULSES_PER_REV)
 
-void SignData2ASCII5(s16 ConverDataX,s16 ConverDataY,s16 ConverDataZ);
-void MPU_Gyro_Sample(void);
-void MPU_Acc_Sample(void);
+#define MAX_CAN_TIMEOUT_TICKS  20          // 5ms * 20 = 100ms 未收到指令则保护
+#define COMP_KD  0.02f   // 阻尼系数，需根据实验调整
+#define COMP_KP  0.001f // 补偿力度 (P参数)
+// 设定死区，误差在 3 个编码器单位以内不进行补偿
+#define COMP_DEADZONE 3
 
-void Gyro2ASCII(float Gx,float Gy,float Gz);
-
-void GetMotorPulse(void);
-void SpeedControl(void);
-void AngleControl(void);
-void SetMotorPWM(float MotorAPWM,float MotorBPWM,float MotorCPWM);
-
-void MotorOutPut(void);
-void fData2ASCII(float fx,float fy,float fz);
-
-void fData2ASCII9(float f1,float f2,float f3,float f4,float f5,float f6,float f7,float f8,float f9);
-void fData2ASCII6(float f1,float f2,float f3,float f4,float f5,float f6);
-
-void Forward_Kinematics(float a,float b,float c);
-void Inverse_Kinematics(float a,float b,float c);
 #endif
 
 

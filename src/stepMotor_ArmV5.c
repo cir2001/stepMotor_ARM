@@ -35,8 +35,8 @@
 //----------------
 //	drv8825 modual              stm32f103
 //		ENA						PA9
-//		STEP					PB13
-//		DIR						PB12
+//		STEP					PB14
+//		DIR						PB13
 //		M0						PA8
 //		M1						PB15
 //		M2						PB14
@@ -110,6 +110,7 @@ extern int32_t Real_Output_Hz;   // 实际发给电机的速度 (包含补偿)
 extern u8 u8Uart2_flag;
 extern int recv_uart2_val;
 extern u16 Global_AS5600_Raw;
+extern volatile float Global_Actual_Speed; // 单位：deg/s (度/秒)
 //----------------------------------------------------
 // 变量声明 
 //-----------------------------------------------------
@@ -152,8 +153,8 @@ int main(void)
     OLED_Clear();
 	OLED_ShowString_Data(0, 0,  "CAN_ID:  ",CAN_ID_FILTER_START);
 	OLED_ShowString_Data(0, 16, "ID_FB :  ",CAN_ID_MOTOR_FB);
-    OLED_ShowString(0, 32, "Tar_Re:");
-    OLED_ShowString(0, 48, "AS56 :");
+    OLED_ShowString(0, 32, (unsigned char *)"Tar_Re:");
+    OLED_ShowString(0, 48, (unsigned char *)"Spd:");
 
     OLED_Refresh_Gram(); // 第一次刷显存
 	// 简单的加速启动示例 
@@ -195,17 +196,27 @@ int main(void)
             oled_tick = 0; // 清零计时器
             LMain = !LMain;
 
-           char buf[8]; // 缓冲区
+            char buf[20]; // 缓冲区
 
             // 处理 Target_Speed
-            sprintf(buf, "%7d", Target_Speed_Hz); // "%-7d" 左对齐，占7位
-            OLED_ShowString(56, 32, buf);
+            sprintf(buf, "Tar_Re: %6ld", (long int)Target_Speed_Hz);// "%-7d" 左对齐，占7位
+            OLED_ShowString(0, 32, (unsigned char *)buf);
 
-            // 处理 Real_Output
-            sprintf(buf, "%5d", Global_AS5600_Raw);
-            OLED_ShowString(72, 48, buf);
+            // 获取绝对值用于计算
+            float display_speed = Global_Actual_Speed;
+            char sign = (display_speed >= 0) ? ' ' : '-'; // 判断符号
+            if (display_speed < 0) display_speed = -display_speed; // 转为正数方便取位
 
-            OLED_Refresh_Gram(); // 刷新显存
+            // 拆分整数和小数
+            int32_t speed_int = (int32_t)display_speed;
+            int32_t speed_dec = (int32_t)(display_speed * 10.0f) % 10;
+
+            // 格式化输出：符号 + 整数 + 点 + 小数
+            // %c 显示符号，%3ld 保证数字对齐
+            sprintf(buf, "Spd: %c%3ld.%1ld", sign, (long int)speed_int, (long int)speed_dec);
+            
+            OLED_ShowString(0, 48, (unsigned char *)buf);
+            OLED_Refresh_Gram();
         }
 	}   // while(1) end
 }		// int main(void) end

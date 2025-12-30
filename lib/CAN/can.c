@@ -125,7 +125,7 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 //real_speed:当前实际的速度
 //pos_error:位置偏差.		
 //--------------------------------------------------------------------------
-void CAN_Send_Feedback(int32_t real_speed, int32_t pos_error)
+void CAN_Send_Feedback(uint16_t pos, int16_t speed, uint8_t status)
 {
     // 检查邮箱0是否空闲
     if ((CAN1->TSR & CAN_TSR_TME0) == CAN_TSR_TME0) 
@@ -140,16 +140,19 @@ void CAN_Send_Feedback(int32_t real_speed, int32_t pos_error)
         // IDE 和 RTR 默认为 0 (标准ID，数据帧)
         CAN1->sTxMailBox[0].TDTR = 8; 
 
-        // 3. 填充 TDLR (Data Low Register, 字节 0-3)
-        // 直接赋值 32 位数据，无需手动拆分字节
-        CAN1->sTxMailBox[0].TDLR = (uint32_t)real_speed;
+        // 填充低4字节 (TDLR)
+        // Data[0-1]: AS5600原始位置 (uint16_t)
+        // Data[2-3]: 计算出的转速 (int16_t, 放大10倍)
+        CAN1->sTxMailBox[0].TDLR = (uint32_t)pos | ((uint32_t)speed << 16);
         
-        // 4. 填充 TDHR (Data High Register, 字节 4-7)
-        // 直接赋值 32 位数据
-        CAN1->sTxMailBox[0].TDHR = (uint32_t)pos_error;
+       // 填充高4字节 (TDHR)
+        // Data[4]: 系统状态 (uint8_t)
+        // Data[5-7]: 预留或发送 Position_Error 的低位
+        extern int32_t Position_Error; // 声明外部变量
+        CAN1->sTxMailBox[0].TDHR = (uint32_t)status | ((uint32_t)Position_Error << 8);
 
         // 5. 触发发送 (设置 TXRQ 位)
-        CAN1->sTxMailBox[0].TIR |= CAN_TI0R_TXRQ; 
+        CAN1->sTxMailBox[0].TIR |= CAN_TI0R_TXRQ;
     }
 }
 //--------------------------------------------------------------------------

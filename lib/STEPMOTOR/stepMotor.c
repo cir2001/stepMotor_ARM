@@ -66,29 +66,33 @@ void StepMotor_Init(void)
 void StepMotor_SetSpeed(int32_t speed_hz) 
 {
     uint16_t arr_val;
-    // 1. 处理方向
-    if (speed_hz > 0) {
-        Motor_Dir = 1; // Set Bit (High)
-    } else if (speed_hz < 0) {
-        Motor_Dir = 0;  // Reset Bit (Low)
-        speed_hz = -speed_hz;            // 取绝对值
-    } else {
-        // 速度为 0，停止输出脉冲
-        // 将 ARR 设为 0 或者关闭 CC1E 都可以，这里设为极大值让它几乎不动，或者直接关定时器
+
+    // 增加死区判断，频率太低时强制停止，防止电机抖动
+    // 1. 死区处理：频率极低时直接关断，防止电机发出电流啸叫
+    if (abs(speed_hz) < 5) 
+    {
         TIM1->ARR = 0; 
         TIM1->CCR2 = 0;
+        TIM1->EGR |= TIM_EGR_UG; 
         return;
+    }
+
+    // 1. 处理方向
+    if (speed_hz > 0) {
+        Motor_Dir = 1; 
+    } else {
+        Motor_Dir = 0;  
+        speed_hz = -speed_hz; // 取绝对值进行频率计算
     }
 
     // 2. 限制最大频率 (防止电机堵转/啸叫)
     // 假设 1/16 细分，42 电机极限大概在 40kHz 左右，根据实际情况调整
     if (speed_hz > 25000) speed_hz = 25000;
-    if (speed_hz < 5) speed_hz = 5; // 防止除以0或频率过低
 
     // 3. 计算 ARR 值
     // 计数器频率是 1MHz (1,000,000 Hz)
     // ARR = (TimerClock / TargetFreq) - 1
-    arr_val = (1000000 / speed_hz) - 1;
+    arr_val = (uint16_t)(1000000 / speed_hz) - 1;
 
     // 如果当前 ARR 是 0 (说明之前是停止状态)，
     // 或者 CNT 已经超过了新的 ARR (说明新周期比当前跑的还短)，

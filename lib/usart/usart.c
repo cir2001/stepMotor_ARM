@@ -104,7 +104,7 @@ void USART2_IRQHandler(void)      //
 //========UART2 PE校验错误判断===============================
 	if(USART2->SR&1)		//PE校验错误，软件清零，看说明书
 	{			
-		rData1Temp=USART2->DR;
+		rData2Temp=USART2->DR;
 		USART2->SR&=!1;	
 	}				  
 //========UART2 ORE过载错误判断===============================
